@@ -1,0 +1,1 @@
+web: gunicorn azhar_student_management.wsgi 

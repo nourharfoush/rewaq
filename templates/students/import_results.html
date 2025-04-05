@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}استيراد نتائج الطلاب - نظام إدارة طلاب رواق العلوم الشرعية والعربية{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="h2 mb-0 text-primary fw-bold">
+                <i class="fas fa-file-upload me-2"></i>استيراد نتائج الطلاب
+            </h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'students:dashboard' %}">لوحة التحكم</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'students:course_result_list' %}">نتائج المواد</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">استيراد نتائج</li>
+                </ol>
+            </nav>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <a href="{% url 'students:course_result_list' %}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-right"></i> العودة لقائمة النتائج
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-upload me-2"></i>رفع ملف نتائج الطلاب</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="alert alert-info">
+                            <h5 class="alert-heading"><i class="fas fa-info-circle me-2"></i>إرشادات الاستيراد</h5>
+                            <p>يرجى التأكد من أن ملف الإكسل يحتوي على الأعمدة التالية:</p>
+                            <ul>
+                                <li><strong>كود الطالب</strong> - كود الطالب المسجل بالنظام (مطلوب)</li>
+                                <li><strong>المادة</strong> - اسم المادة كما هو مسجل بالنظام (مطلوب)</li>
+                                <li><strong>الدرجة</strong> - درجة الطالب في المادة (مطلوب)</li>
+                            </ul>
+                        </div>
+                        
+                        {{ form|crispy }}
+                        
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-upload me-2"></i>استيراد النتائج
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-download me-2"></i>تنزيل قالب الاستيراد</h5>
+                </div>
+                <div class="card-body">
+                    <p>يمكنك تنزيل قالب جاهز لاستيراد نتائج الطلاب:</p>
+                    <div class="d-grid">
+                        <a href="{% url 'students:course_result_list' %}?template=true" class="btn btn-outline-primary">
+                            <i class="fas fa-file-excel me-2"></i>تنزيل قالب النتائج
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-question-circle me-2"></i>ملاحظات هامة</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li>يجب أن يكون الملف بصيغة Excel (.xlsx)</li>
+                        <li>جميع الأعمدة المذكورة أعلاه مطلوبة</li>
+                        <li>يجب أن يكون كود الطالب موجوداً بالفعل في النظام</li>
+                        <li>يجب أن يكون اسم المادة مطابقاً لاسم المادة في النظام</li>
+                        <li>الدرجة يجب أن تكون قيمة رقمية</li>
+                        <li>في حال وجود نتيجة سابقة لنفس الطالب في نفس المادة للعام المحدد، سيتم تحديثها</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

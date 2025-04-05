@@ -1,0 +1,199 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}النتائج النهائية - نظام إدارة طلاب رواق العلوم الشرعية والعربية{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="h2 mb-0 text-primary fw-bold">
+                <i class="fas fa-certificate me-2"></i>النتائج النهائية
+            </h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'students:dashboard' %}">لوحة التحكم</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">النتائج النهائية</li>
+                </ol>
+            </nav>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <a href="{% url 'students:generate_results' %}" class="btn btn-primary">
+                <i class="fas fa-cog"></i> إنشاء النتائج النهائية
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter Form -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body p-3">
+            <form method="get" action="{% url 'students:results_list' %}" class="mb-0">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label">المستوى</label>
+                        <select name="level" class="form-select">
+                            <option value="">-- جميع المستويات --</option>
+                            {% for level in levels %}
+                            <option value="{{ level.id }}" {% if request.GET.level == level.id|stringformat:"i" %}selected{% endif %}>
+                                {{ level.name }} - {{ level.stage.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">العام الدراسي</label>
+                        <select name="academic_year" class="form-select">
+                            <option value="">-- جميع الأعوام --</option>
+                            {% for year in years %}
+                            <option value="{{ year }}" {% if request.GET.academic_year == year %}selected{% endif %}>
+                                {{ year }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">حالة النتيجة</label>
+                        <select name="status" class="form-select">
+                            <option value="">-- جميع الحالات --</option>
+                            {% for status, label in result_statuses %}
+                            <option value="{{ status }}" {% if request.GET.status == status %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <input type="text" name="q" class="form-control" placeholder="بحث باسم أو كود الطالب" value="{{ request.GET.q|default:'' }}">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Results List -->
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center py-3">
+            <h5 class="mb-0">
+                <i class="fas fa-list-alt me-2"></i>قائمة النتائج النهائية
+                {% if page_obj.paginator.count > 0 %}
+                <span class="badge bg-secondary">{{ page_obj.paginator.count }}</span>
+                {% endif %}
+            </h5>
+            <div>
+                {% if request.GET.level and request.GET.academic_year and results %}
+                <a href="{% url 'students:export_results' results.0.level.id %}?academic_year={{ request.GET.academic_year }}" class="btn btn-sm btn-outline-success">
+                    <i class="fas fa-file-excel me-1"></i> تصدير كشف النتائج
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>كود الطالب</th>
+                            <th>اسم الطالب</th>
+                            <th>المستوى</th>
+                            <th>العام الدراسي</th>
+                            <th>النتيجة</th>
+                            <th>المواد المتعثر فيها</th>
+                            <th class="text-center">الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for result in results %}
+                        <tr>
+                            <td>{{ result.student.code }}</td>
+                            <td>
+                                <a href="{% url 'students:student_detail' result.student.id %}" class="text-decoration-none">
+                                    {{ result.student.full_name }}
+                                </a>
+                            </td>
+                            <td>{{ result.level.name }}</td>
+                            <td>{{ result.academic_year }}</td>
+                            <td>
+                                <span class="badge {% if result.result == 'ناجح ومنقول' %}bg-success{% elif result.result == 'منقول بمواد' %}bg-warning{% else %}bg-danger{% endif %}">
+                                    {{ result.result }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if result.failed_courses.all %}
+                                <small>
+                                    {% for course in result.failed_courses.all %}
+                                    {{ course.name }}{% if not forloop.last %}, {% endif %}
+                                    {% endfor %}
+                                </small>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <a href="{% url 'students:export_student_results' result.student.id %}?academic_year={{ result.academic_year }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-file-alt"></i> كشف درجات
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4">
+                                <i class="fas fa-info-circle me-2 text-info"></i>
+                                لا توجد نتائج مطابقة للبحث.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% if page_obj.paginator.num_pages > 1 %}
+        <div class="card-footer bg-transparent">
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center mb-0">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="First">
+                            <span aria-hidden="true">&laquo;&laquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Last">
+                            <span aria-hidden="true">&raquo;&raquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

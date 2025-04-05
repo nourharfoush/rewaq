@@ -1,0 +1,203 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}نتائج المواد - نظام إدارة طلاب رواق العلوم الشرعية والعربية{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="h2 mb-0 text-primary fw-bold">
+                <i class="fas fa-clipboard-list me-2"></i>نتائج المواد
+            </h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'students:dashboard' %}">لوحة التحكم</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">نتائج المواد</li>
+                </ol>
+            </nav>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <div class="btn-group">
+                <a href="{% url 'students:course_result_add' %}" class="btn btn-primary">
+                    <i class="fas fa-plus-circle"></i> إضافة نتيجة
+                </a>
+                <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                    <span class="visually-hidden">Toggle Dropdown</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="{% url 'students:bulk_upload_results' %}">
+                        <i class="fas fa-upload me-2"></i>رفع نتائج بالجملة
+                    </a></li>
+                    <li><a class="dropdown-item" href="{% url 'students:import_results' %}">
+                        <i class="fas fa-file-import me-2"></i>استيراد نتائج
+                    </a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Form -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body p-3">
+            <form method="get" action="{% url 'students:course_result_list' %}" class="mb-0">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label">المادة</label>
+                        <select name="course" class="form-select">
+                            <option value="">-- جميع المواد --</option>
+                            {% for course in courses %}
+                            <option value="{{ course.id }}" {% if request.GET.course == course.id|stringformat:"i" %}selected{% endif %}>
+                                {{ course.name }} ({{ course.level.name }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">المستوى</label>
+                        <select name="level" class="form-select">
+                            <option value="">-- جميع المستويات --</option>
+                            {% for level in levels %}
+                            <option value="{{ level.id }}" {% if request.GET.level == level.id|stringformat:"i" %}selected{% endif %}>
+                                {{ level.name }} - {{ level.stage.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">العام الدراسي</label>
+                        <select name="academic_year" class="form-select">
+                            <option value="">-- جميع الأعوام --</option>
+                            {% for year in years %}
+                            <option value="{{ year }}" {% if request.GET.academic_year == year %}selected{% endif %}>
+                                {{ year }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <input type="text" name="q" class="form-control" placeholder="بحث باسم أو كود الطالب" value="{{ request.GET.q|default:'' }}">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Results List -->
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center py-3">
+            <h5 class="mb-0">
+                <i class="fas fa-list-alt me-2"></i>قائمة النتائج
+                {% if page_obj.paginator.count > 0 %}
+                <span class="badge bg-secondary">{{ page_obj.paginator.count }}</span>
+                {% endif %}
+            </h5>
+            <div>
+                {% if results %}
+                <a href="{% url 'students:export_results' %}?{{ request.GET.urlencode }}" class="btn btn-sm btn-outline-success">
+                    <i class="fas fa-file-excel me-1"></i> تصدير النتائج
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>كود الطالب</th>
+                            <th>اسم الطالب</th>
+                            <th>المادة</th>
+                            <th>المستوى</th>
+                            <th>الدرجة</th>
+                            <th>العام الدراسي</th>
+                            <th class="text-center">الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for result in results %}
+                        <tr>
+                            <td>{{ result.student.code }}</td>
+                            <td>
+                                <a href="{% url 'students:student_detail' result.student.id %}" class="text-decoration-none">
+                                    {{ result.student.full_name }}
+                                </a>
+                            </td>
+                            <td>{{ result.course.name }}</td>
+                            <td>{{ result.student.level.name }}</td>
+                            <td>
+                                <span class="fw-bold {% if result.score < result.course.pass_score %}text-danger{% else %}text-success{% endif %}">
+                                    {{ result.score }}
+                                </span>
+                                <small class="text-muted">من {{ result.course.max_score }}</small>
+                            </td>
+                            <td>{{ result.academic_year }}</td>
+                            <td class="text-center">
+                                <a href="{% url 'students:course_result_edit' result.id %}" class="btn btn-sm btn-outline-warning">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4">
+                                <i class="fas fa-info-circle me-2 text-info"></i>
+                                لا توجد نتائج مطابقة للبحث.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% if page_obj.paginator.num_pages > 1 %}
+        <div class="card-footer bg-transparent">
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center mb-0">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="First">
+                            <span aria-hidden="true">&laquo;&laquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Last">
+                            <span aria-hidden="true">&raquo;&raquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 
